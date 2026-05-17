@@ -1,9 +1,8 @@
 name: Publish to PyPI
 
 on:
-  push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+' # Triggers on final release version tags (e.g., 2.0.0, 2.1.0)
+  release:
+    types: [published]
 
 concurrency:
   group: pypi-publish
