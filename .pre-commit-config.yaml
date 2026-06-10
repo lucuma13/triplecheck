@@ -1,0 +1,89 @@
+---
+repos:
+  # Pre-commit configuration checks
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+  # General file hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: mixed-line-ending
+      - id: name-tests-test
+        args: ["--pytest-test-first"]
+  # Spellcheck
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.47.1
+    hooks:
+      - id: typos
+        exclude: ^tests/ # false positives due to hex string hashes
+  # Pyproject formatter
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: v2.23.0
+    hooks:
+      - id: pyproject-fmt
+  # Pyproject validator
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.25
+    hooks:
+      - id: validate-pyproject
+  # TOML formatter and linter (excluding pyproject.toml)
+  - repo: local
+    hooks:
+      - id: taplo-fmt
+        name: taplo-fmt
+        entry: uv run taplo fmt
+        language: system
+        types: [toml]
+        exclude: ^pyproject\.toml$
+      - id: taplo-lint
+        name: taplo-lint
+        entry: uv run taplo lint
+        language: system
+        types: [toml]
+        exclude: ^pyproject\.toml$
+  # Python formatter and linter (linter with --fix before formatter)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.15
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+  # Python type checker
+  - repo: local
+    hooks:
+      - id: ty-check
+        name: ty check
+        entry: uv run ty check
+        language: system
+        types: [python]
+        pass_filenames: false
+  # YAML formatter
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.21.0
+    hooks:
+      - id: yamlfmt
+        args: ["-formatter", "include_document_start=true,line_length=120"]
+  # YAML linter
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args:
+          - --config-data
+          - "{extends: default, rules: {line-length: {max: 120}, comments: {min-spaces-from-content: 1}}}"
+  # GitHub workflow schema validation
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.37.2
+    hooks:
+      - id: check-github-workflows
+        args: ["--verbose"]
+  # CI security auditing
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.25.2
+    hooks:
+      - id: zizmor
