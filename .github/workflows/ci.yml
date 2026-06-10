@@ -1,0 +1,138 @@
+---
+name: CI
+run-name: CI - ${{ github.event.head_commit.message }}
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_call:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+permissions: {}
+jobs:
+  # JOB 0: Determine Python matrix
+  prepare-matrix:
+    name: Determine Python Matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      python-versions: ${{ steps.set-matrix.outputs.versions }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Extract Python Versions
+        id: set-matrix
+        run: |
+          # Use a quick inline python snippet to read the exact classifiers from your TOML
+          VERSIONS=$(python3 -c '
+          import tomllib, json
+          with open("pyproject.toml", "rb") as f:
+              data = tomllib.load(f)
+          # Extract numbers from "Programming Language :: Python :: 3.xx"
+          classifiers = data.get("project", {}).get("classifiers", [])
+          versions = [c.split("::")[-1].strip() for c in classifiers if "Programming Language :: Python :: 3." in c]
+          print(json.dumps(versions))
+          ')
+          echo "versions=$VERSIONS" >> "$GITHUB_OUTPUT"
+  # JOB 1: Lint and type-check
+  lint:
+    name: Lint & type-check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: false
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version-file: pyproject.toml
+      - name: Install dev dependencies (locked)
+        run: uv sync --locked --group dev
+      - name: Run ruff check
+        run: uv run ruff check
+      - name: Run ruff format check
+        run: uv run ruff format --check
+      - name: Run ty type-check
+        run: uv run ty check
+  # JOB 2: Security and correctness audit (runs in parallel with lint)
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: false
+      # YAML correctness
+      - name: Lint YAML (yamllint)
+        uses: ibiqlik/action-yamllint@2576378a8e339169678f9939646ee3ee325e845c # v3.1.1
+        with:
+          config_data: "{extends: default, rules: {line-length: {max: 120}, comments: {min-spaces-from-content: 1}}}"
+      # GitHub workflow schema validation
+      - name: Validate GitHub workflow schemas
+        uses: dsanders11/json-schema-validate-action@eddf079f55830cc9a916a3c512ba9086240d2fea # v2.0.0
+        with:
+          schema: https://json.schemastore.org/github-workflow.json
+          files: .github/workflows/**.yml
+      # pyproject.toml validation
+      - name: Validate pyproject.toml
+        run: uvx validate-pyproject==0.25 pyproject.toml
+      # CI workflow security audit
+      - name: Audit CI workflows (zizmor)
+        uses: zizmorcore/zizmor-action@5f14fd08f7cf1cb1609c1e344975f152c7ee938d # v0.5.6
+        with:
+          advanced-security: false
+  # JOB 3: Test matrix (stable + experimental Python versions, gates on lint + audit)
+  test:
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    needs: [lint, audit]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0 # full history for dynamic versioning
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install project and dev dependencies (locked)
+        run: uv sync --locked --group dev
+      - name: Run test suite
+        run: uv run pytest
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false

@@ -1,121 +1,147 @@
+---
 name: Publish to TestPyPI
-
-on:
+run-name: Publish to TestPyPI - Release ${{ github.ref_name }}
+"on":
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+a[0-9]+'  # alpha releases only (e.g. 2.0.0a1)
-
+      - '[0-9]+.[0-9]+.[0-9]+a[0-9]+' # alpha releases only (e.g. 2.0.0a1)
 concurrency:
   group: testpypi-publish
   cancel-in-progress: true
-
+permissions: {} # deny all by default; each job grants only what it needs
 jobs:
-  # JOB 1: Pre-Deployment Validation (Safety Gate)
-  run-unit-tests:
-    name: Unit Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-
+  # JOB 0: Run the full CI suite as a safety gate
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+  # JOB 1: Read project metadata from pyproject.toml
+  read-metadata:
+    name: Read pyproject.toml metadata
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      package-name: ${{ steps.meta.outputs.package-name }}
+      smoke-test-cmds: ${{ steps.meta.outputs.smoke-test-cmds }}
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          fetch-depth: 0 # Fetches all history and tags so dynamic versioning works
-
-      - name: Verify version tag matches __version__
-        shell: bash
+          persist-credentials: false
+      - name: Extract metadata from pyproject.toml
+        id: meta
+        shell: python3 {0}
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          SOURCE=$(grep -m1 '__version__' src/triplecheck.py | sed 's/.*"\(.*\)".*/\1/')
-          if [ "$TAG" != "$SOURCE" ]; then
-            echo "Version mismatch: tag=$TAG, __version__=$SOURCE"
-            exit 1
-          fi
+          import tomllib, os
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+          with open("pyproject.toml", "rb") as f:
+              data = tomllib.load(f)
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
+          project = data["project"]
+          name = project["name"]
+          cmds = " ".join(project.get("scripts", {}).keys())
 
-      - name: Install local package and testing tools
-        run: |
-          uv pip install --system pytest pytest-cov
-          uv pip install --system -e .
-
-      - name: Run test suite
-        run: pytest
-
-  # JOB 2: Deployment (Only runs if Job 1 passes)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              print(f"package-name={name}", file=out)
+              print(f"smoke-test-cmds={cmds}", file=out)
+  # JOB 2: Build and publish (only runs if CI passes)
   build-n-publish:
     name: Build and publish Python distro to TestPyPI
-    needs: run-unit-tests
+    needs: [ci, read-metadata]
     runs-on: ubuntu-latest
-
     permissions:
       id-token: write
       contents: read
-
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/triplecheck
-
+      url: >-
+        https://test.pypi.org/p/${{ needs.read-metadata.outputs.package-name }}
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          fetch-depth: 0 # CRITICAL: Allows flit to calculate the dynamic version from the Git tag
+          persist-credentials: false
+      - name: Verify version tag matches TOML declaration
+        shell: python3 {0}
+        run: |
+          import tomllib, os, sys
 
+          with open("pyproject.toml", "rb") as f:
+              source = tomllib.load(f)["project"]["version"]
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          if tag != source:
+              print(f"Version mismatch: tag={tag}, pyproject.toml={source}")
+              sys.exit(1)
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version-file: "pyproject.toml"
-
+          enable-cache: false # disabled to prevent cache poisoning
+          ignore-empty-workdir: true
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version-file: pyproject.toml
       - name: Build binary wheels and source tarball
         run: uv build
-
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
       - name: Publish to TestPyPI via uv
         run: uv publish --publish-url https://test.pypi.org/legacy/
-
-  # JOB 3: Post-Deployment Smoke Test (Verifies index installation and packaging)
+  # JOB 3: Post-deployment smoke test (verifies index installation and packaging)
   verify-deployment:
     name: Verify Live Package (${{ matrix.os }})
-    needs: build-n-publish
+    needs: [read-metadata, build-n-publish]
     runs-on: ${{ matrix.os }}
+    permissions: {}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: false # disabled on publish workflows to prevent cache poisoning
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.14"
-
-      - name: Delay execution for index propagation
-        if: runner.os != 'Windows'
-        run: sleep 30
-
-      - name: Delay execution for index propagation (Windows)
-        if: runner.os == 'Windows'
-        run: Start-Sleep -Seconds 30
-
-      - name: Install deployed package
+      - name: Install deployed package from TestPyPI
+        env:
+          PACKAGE_NAME: ${{ needs.read-metadata.outputs.package-name }}
+        shell: bash
         run: |
-          uv pip install --system --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --prerelease allow triplecheck
+          MAX_RETRIES=6
+          RETRY_INTERVAL=10
 
-      - name: Smoke test
-        run: triplecheck --version
+          for i in $(seq 1 $MAX_RETRIES); do
+            if uv pip install --system \
+              --index-url https://test.pypi.org/simple/ \
+              --extra-index-url https://pypi.org/simple/ \
+              --prerelease allow \
+              "$PACKAGE_NAME"; then
+              echo "Package installed successfully from TestPyPI."
+              exit 0
+            fi
+            echo "Index not yet updated. Retrying in $RETRY_INTERVAL seconds... ($i/$MAX_RETRIES)"
+            sleep $RETRY_INTERVAL
+          done
+
+          echo "Package failed to propagate after $((MAX_RETRIES * RETRY_INTERVAL)) seconds."
+          exit 1
+      - name: Smoke test CLI entry points
+        env:
+          SMOKE_TEST_CMDS: ${{ needs.read-metadata.outputs.smoke-test-cmds }}
+        shell: bash
+        run: |
+          for cmd in $SMOKE_TEST_CMDS; do
+            echo "→ $cmd --version"
+            "$cmd" --version
+          done
