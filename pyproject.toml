@@ -28,6 +28,7 @@ requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: End Users/Desktop",
+  "Natural Language :: English",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
@@ -55,10 +56,10 @@ dev = [
 
 [tool.hatch]
 build.targets.wheel.packages = [ "src/triplecheck" ]
-build.targets.sdist.include = [
-  "src/triplecheck/",
-  "tests/",
-]
+build.targets.sdist.include = [ "src/triplecheck/", "tests/"]
+
+[tool.uv]
+managed = true
 
 [tool.ruff]
 line-length = 120
