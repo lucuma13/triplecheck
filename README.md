@@ -48,17 +48,17 @@ triplecheck "path/to/file1" "path/to/file2"
 Compare two (or three) directories:
 
 ```bash
-triplecheck "path/to/dir1" "path/to/dir2" "path/to/dir3"            # metadata-only comparison (filenames and file sizes)
-triplecheck -f "path/to/dir1" "path/to/dir2"                        # full  comparison: hash every file
-triplecheck -i "path/to/dir1" "path/to/dir2"                        # ignore folder structure
-triplecheck -e "*.mhl" -e "*.txt" "path/to/dir1" "path/to/dir2"     # exclude .mhl and .txt files
+triplecheck "path/to/dir1" "path/to/dir2" "path/to/dir3"         # metadata-only comparison (filenames and file sizes)
+triplecheck -f "path/to/dir1" "path/to/dir2"                     # full  comparison: hash every file
+triplecheck -i "path/to/dir1" "path/to/dir2"                     # ignore folder structure
+triplecheck -e "*.mhl" -e "*.txt" "path/to/dir1" "path/to/dir2"  # exclude .mhl and .txt files
 ```
 
 Compare two (or three) directories on different machines:
 
 ```bash
-triplecheck --molist "path/to/local/dir1"                           # creates "molist_dir1.tsv"
-triplecheck --molist "path/to/remote/dir2"                          # creates "molist_dir2.tsv"
+triplecheck --molist "path/to/local/dir1"                        # creates "molist_dir1.tsv"
+triplecheck --molist "path/to/remote/dir2"                       # creates "molist_dir2.tsv"
 triplecheck --mocompare "molist_dir1.tsv" "molist_dir2.tsv"
 ```
 
