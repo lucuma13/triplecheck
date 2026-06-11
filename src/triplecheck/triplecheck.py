@@ -18,10 +18,10 @@ triplecheck "path/to/file1" "path/to/file2"
 Compare two (or three) directories:
 
 ```bash
-triplecheck "path/to/dir1" "path/to/dir2" "path/to/dir3"            # metadata-only comparison (filenames and file sizes)
-triplecheck -f "path/to/dir1" "path/to/dir2"                        # full  comparison: hash every file
-triplecheck -i "path/to/dir1" "path/to/dir2"                        # ignore folder structure
-triplecheck -e "*.mhl" -e "*.txt" "path/to/dir1" "path/to/dir2"     # exclude .mhl and .txt files
+triplecheck "path/to/dir1" "path/to/dir2" "path/to/dir3"         # metadata-only comparison
+triplecheck -f "path/to/dir1" "path/to/dir2"                     # full  comparison: hash every file
+triplecheck -i "path/to/dir1" "path/to/dir2"                     # ignore folder structure
+triplecheck -e "*.mhl" -e "*.txt" "path/to/dir1" "path/to/dir2"  # exclude .mhl and .txt files
 ```
 
 Compare two (or three) directories on different machines:
@@ -96,10 +96,10 @@ SIGILS = ["<", ">", ">>"]
 LABELS = ["source", "dest1", "dest2"]
 
 # Numeric limits used in CLI validation and TSV parsing.
-_TWO_WAY = 2          # --diff is only defined for two-way comparisons
-_MIN_PATHS = 2        # minimum number of paths for a comparison
-_MAX_PATHS = 3        # maximum number of paths for a comparison
-_TSV_COLS = 2         # every molist TSV row has exactly 2 tab-separated columns
+_TWO_WAY = 2  # --diff is only defined for two-way comparisons
+_MIN_PATHS = 2  # minimum number of paths for a comparison
+_MAX_PATHS = 3  # maximum number of paths for a comparison
+_TSV_COLS = 2  # every molist TSV row has exactly 2 tab-separated columns
 
 
 # ---------------------------------------------------------------------------
@@ -322,7 +322,7 @@ def list_metadata(
     return out, [], []
 
 
-def list_full(
+def list_full(  # noqa: PLR0913
     root: str,
     algo: str,
     appledouble: bool,
@@ -695,8 +695,7 @@ def _load_molist(path: Path) -> Listing:
             header = f.readline().strip().split("\t")
             if len(header) < _TSV_COLS or header[0] not in ("hash", "size"):
                 sys.exit(
-                    f"error: '{path}' doesn't look like a molist TSV "
-                    f"(expected 'hash' or 'size' as the first column)."
+                    f"error: '{path}' doesn't look like a molist TSV (expected 'hash' or 'size' as the first column)."
                 )
             is_hash = header[0] == "hash"
             for lineno, raw_line in enumerate(f, start=2):
@@ -705,9 +704,7 @@ def _load_molist(path: Path) -> Listing:
                     continue
                 parts = line.split("\t", 1)
                 if len(parts) != _TSV_COLS:
-                    sys.exit(
-                        f"error: malformed line {lineno} in '{path}': {line!r}"
-                    )
+                    sys.exit(f"error: malformed line {lineno} in '{path}': {line!r}")
                 raw_val, filepath = parts
                 rows.append((raw_val, _nfc(filepath)))
     except OSError as e:
