@@ -36,7 +36,7 @@ jobs:
           fi
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
@@ -72,7 +72,7 @@ jobs:
           fetch-depth: 0 # CRITICAL: Allows flit to calculate the dynamic version from the Git tag
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -97,7 +97,7 @@ jobs:
 
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
 
       - name: Set up Python
         uses: actions/setup-python@v6
