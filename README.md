@@ -11,7 +11,7 @@
 * For files it compares their hashes.
 * For directories, it either compares the hashes of every file (full comparison mode), or compares file names and sizes (default). And it contains an optional `-i` flag to ignore folder structure and focus exclusively on files (useful if directories have been nested, moved around or renamed in one of your copies).
 
-This is a cross-platform tool (macOS / Linux / Windows) written in [Python](https://www.python.org/) and integrating the [xxhash](https://pypi.org/project/xxhash) package for high-throughput hashing and [blake3](https://pypi.org/project/blake3) for cryptographic hashing.
+Two hash functions are available: [xxhash](https://pypi.org/project/xxhash) for high-throughput and [blake3](https://pypi.org/project/blake3) for cryptographic hashing.
 
 ### 🚀 Installation
 
