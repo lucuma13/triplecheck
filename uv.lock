@@ -546,7 +546,7 @@ wheels = [
 
 [[package]]
 name = "triplecheck"
-version = "2.1.0a1"
+version = "2.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "blake3" },
