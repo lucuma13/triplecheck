@@ -9,6 +9,7 @@ description = "Two- or three-way comparison tool for files and directories"
 readme = "README.md"
 keywords = [
   "backup-verification",
+  "blake3",
   "checksum",
   "compare",
   "diff",
@@ -18,7 +19,6 @@ keywords = [
   "metadata",
   "verification",
   "xxhash",
-  "blake3",
 ]
 license = { text = "MIT" }
 authors = [
@@ -56,7 +56,7 @@ dev = [
 
 [tool.hatch]
 build.targets.wheel.packages = [ "src/triplecheck" ]
-build.targets.sdist.include = [ "src/triplecheck/", "tests/"]
+build.targets.sdist.include = [ "src/triplecheck/", "tests/" ]
 
 [tool.uv]
 managed = true
