@@ -17,7 +17,7 @@ repos:
         args: ["--pytest-test-first"]
   # Spellcheck
   - repo: https://github.com/crate-ci/typos
-    rev: v1.47.1
+    rev: v1.47.2
     hooks:
       - id: typos
         exclude: ^tests/ # false positives due to hex string hashes
