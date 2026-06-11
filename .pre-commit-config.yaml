@@ -82,6 +82,11 @@ repos:
     hooks:
       - id: check-github-workflows
         args: ["--verbose"]
+  # Dependency security auditing
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.10.1
+    hooks:
+      - id: pip-audit
   # CI security auditing
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.25.2
