@@ -41,6 +41,7 @@ triplecheck --diff "path/to/src" "path/to/dst" | grep "<"
 
 import argparse
 import fnmatch
+import importlib.metadata
 import os
 import sys
 import unicodedata
@@ -50,7 +51,14 @@ from pathlib import Path
 import blake3
 import xxhash
 
-__version__ = "2.0.0"
+# -----------------------------------------------------------------------------
+# Version
+# -----------------------------------------------------------------------------
+
+try:
+    __version__ = importlib.metadata.version("triplecheck")
+except importlib.metadata.PackageNotFoundError:  # pragma: no cover
+    __version__ = "unknown"
 
 # ---------------------------------------------------------------------------
 # Type aliases
@@ -118,10 +126,11 @@ def normalise_algorithm(algo: str) -> str:
 def _nfc(s: str) -> str:
     """Return the NFC form of *s*.
 
-    APFS (macOS) stores filenames in NFD, while exFAT (and most other
-    filesystems) stores them in NFC.  Without normalisation, the visually
+    HFS+ (Mac OS Extended) stores filenames in a Modified NFD, while APFS
+    exFAT (and most other filesystems) are normalisation-preserving (they
+    can store files in NFC or NFD).  Without normalisation, the visually
     identical string "café.txt" can appear as two different byte sequences
-    — U+0065 U+0301 on the Mac source and U+00E9 on the exFAT backup —
+    — U+0065 U+0301 on a Mac source and U+00E9 a exFAT backup —
     causing spurious diff results.  Normalising every relative path to NFC
     before comparison or sorting eliminates the false positives.
     """
@@ -719,9 +728,7 @@ def _load_molist(path: Path) -> Listing:
 
 def cmd_mocompare(paths: list[Path], args: argparse.Namespace) -> int:
     """Compare two or three molist TSV files using the same diff machinery."""
-    listings: list[Listing] = []
-    for p in paths:
-        listings.append(_load_molist(p))
+    listings: list[Listing] = [_load_molist(p) for p in paths]
 
     # Infer full/size mode from the first file's header to decide wording.
     with paths[0].open(encoding="utf-8") as f:
