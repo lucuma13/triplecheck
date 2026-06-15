@@ -1,9 +1,4 @@
-"""
-pytest test suite for triplecheck.py
-
-Run from the repo root:
-    uv run pytest
-"""
+"""Test suite for triplecheck."""
 
 import argparse
 import os
@@ -838,7 +833,7 @@ class TestDiffMode:
         run("--diff", str(src), str(dest))
         out = capsys.readouterr().out
         lines = [line for line in out.splitlines() if line.strip()]
-        assert all(line.startswith("<") or line.startswith(">") for line in lines)
+        assert all(line.startswith(("<", ">")) for line in lines)
 
     def test_diff_missing_from_dest_shows_left_arrow(self, tmp_path, capsys):
         src = tmp_path / "src"
@@ -1052,7 +1047,7 @@ class TestEdgeCases:
         dest = tmp_path / "dest"
         dest.mkdir()
         names = [
-            "cafe\u0301.txt",
+            "rose\u0301.txt",
             "\u65e5\u672c\u8a9e.txt",
             "\ud55c\uad6d\uc5b4.txt",
             "emoji_\U0001f389.txt",
@@ -1069,8 +1064,8 @@ class TestEdgeCases:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / "caf\xe9.txt", b"aaa")
-        make_file(dest / "caf\xe9.txt", b"bbbb")
+        make_file(src / "ros\xe9.txt", b"aaa")
+        make_file(dest / "ros\xe9.txt", b"bbbb")
         assert run(str(src), str(dest)) == 1
         assert run("-f", str(src), str(dest)) == 1
 
@@ -2018,10 +2013,10 @@ class TestMolistSinglePathNotDir:
 # Unicode normalisation (NFC vs NFD) tests
 # ---------------------------------------------------------------------------
 
-NFC_CAFE = "caf\u00e9.txt"  # é as a single code point (NFC, exFAT)
-NFD_CAFE = "cafe\u0301.txt"  # e + combining acute accent (NFD, APFS)
-NFC_DIR = "caf\u00e9_dir"
-NFD_DIR = "cafe\u0301_dir"
+NFC_ROSE = "ros\u00e9.txt"  # é as a single code point (NFC, exFAT)
+NFD_ROSE = "rose\u0301.txt"  # e + combining acute accent (NFD, APFS)
+NFC_DIR = "ros\u00e9_dir"
+NFD_DIR = "rose\u0301_dir"
 
 
 class TestNfcNormalisationMetadataMode:
@@ -2039,8 +2034,8 @@ class TestNfcNormalisationMetadataMode:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / NFD_CAFE, b"content")
-        make_file(dest / NFC_CAFE, b"content")
+        make_file(src / NFD_ROSE, b"content")
+        make_file(dest / NFC_ROSE, b"content")
         assert run(str(src), str(dest)) == 0
 
     def test_nfc_src_nfd_dest_match(self, tmp_path):
@@ -2049,8 +2044,8 @@ class TestNfcNormalisationMetadataMode:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / NFC_CAFE, b"content")
-        make_file(dest / NFD_CAFE, b"content")
+        make_file(src / NFC_ROSE, b"content")
+        make_file(dest / NFD_ROSE, b"content")
         assert run(str(src), str(dest)) == 0
 
     def test_nfd_vs_nfc_different_content_mismatch(self, tmp_path):
@@ -2059,8 +2054,8 @@ class TestNfcNormalisationMetadataMode:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / NFD_CAFE, b"aaa")
-        make_file(dest / NFC_CAFE, b"bbbb")
+        make_file(src / NFD_ROSE, b"aaa")
+        make_file(dest / NFC_ROSE, b"bbbb")
         assert run(str(src), str(dest)) == 1
 
     def test_multiple_accented_files_all_match(self, tmp_path):
@@ -2087,8 +2082,8 @@ class TestNfcNormalisationMetadataMode:
         dest.mkdir()
         (src / "photos").mkdir()
         (dest / "photos").mkdir()
-        make_file(src / "photos" / NFD_CAFE, b"img")
-        make_file(dest / "photos" / NFC_CAFE, b"img")
+        make_file(src / "photos" / NFD_ROSE, b"img")
+        make_file(dest / "photos" / NFC_ROSE, b"img")
         assert run(str(src), str(dest)) == 0
 
     def test_three_way_nfd_nfc_mix_match(self, tmp_path):
@@ -2099,9 +2094,9 @@ class TestNfcNormalisationMetadataMode:
         dest1.mkdir()
         dest2 = tmp_path / "dest2"
         dest2.mkdir()
-        make_file(src / NFD_CAFE, b"content")
-        make_file(dest1 / NFC_CAFE, b"content")
-        make_file(dest2 / NFC_CAFE, b"content")
+        make_file(src / NFD_ROSE, b"content")
+        make_file(dest1 / NFC_ROSE, b"content")
+        make_file(dest2 / NFC_ROSE, b"content")
         assert run(str(src), str(dest1), str(dest2)) == 0
 
     def test_sorting_stable_across_normalisation_forms(self, tmp_path):
@@ -2114,11 +2109,11 @@ class TestNfcNormalisationMetadataMode:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        # NFD: bare 'e' (U+0065) + combining acute (U+0301)  →  "café"
-        # NFC: precomposed 'é' (U+00E9)                       →  "café"
+        # NFD: bare 'e' (U+0065) + combining acute (U+0301)  →  "rosé"
+        # NFC: precomposed 'é' (U+00E9)                       →  "rosé"
         # These are visually identical but byte-different before normalisation.
-        names_nfd = [f"file_{i}_cafe\u0301.txt" for i in range(5)]  # e + combining
-        names_nfc = [f"file_{i}_caf\u00e9.txt" for i in range(5)]  # precomposed é
+        names_nfd = [f"file_{i}_rose\u0301.txt" for i in range(5)]  # e + combining
+        names_nfc = [f"file_{i}_ros\u00e9.txt" for i in range(5)]  # precomposed é
         for nfd, nfc in zip(names_nfd, names_nfc, strict=True):
             make_file(src / nfd, b"x")
             make_file(dest / nfc, b"x")
@@ -2133,8 +2128,8 @@ class TestNfcNormalisationFullMode:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / NFD_CAFE, b"content")
-        make_file(dest / NFC_CAFE, b"content")
+        make_file(src / NFD_ROSE, b"content")
+        make_file(dest / NFC_ROSE, b"content")
         assert run("-f", str(src), str(dest)) == 0
 
     def test_nfc_src_nfd_dest_match_full(self, tmp_path):
@@ -2142,8 +2137,8 @@ class TestNfcNormalisationFullMode:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / NFC_CAFE, b"content")
-        make_file(dest / NFD_CAFE, b"content")
+        make_file(src / NFC_ROSE, b"content")
+        make_file(dest / NFD_ROSE, b"content")
         assert run("-f", str(src), str(dest)) == 0
 
     def test_nfd_vs_nfc_different_content_mismatch_full(self, tmp_path):
@@ -2152,8 +2147,8 @@ class TestNfcNormalisationFullMode:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / NFD_CAFE, b"aaa")
-        make_file(dest / NFC_CAFE, b"bbb")  # same size different content
+        make_file(src / NFD_ROSE, b"aaa")
+        make_file(dest / NFC_ROSE, b"bbb")  # same size different content
         assert run("-f", str(src), str(dest)) == 1
 
     def test_three_way_nfd_nfc_mix_match_full(self, tmp_path):
@@ -2163,9 +2158,9 @@ class TestNfcNormalisationFullMode:
         dest1.mkdir()
         dest2 = tmp_path / "dest2"
         dest2.mkdir()
-        make_file(src / NFD_CAFE, b"content")
-        make_file(dest1 / NFC_CAFE, b"content")
-        make_file(dest2 / NFC_CAFE, b"content")
+        make_file(src / NFD_ROSE, b"content")
+        make_file(dest1 / NFC_ROSE, b"content")
+        make_file(dest2 / NFC_ROSE, b"content")
         assert run("-f", str(src), str(dest1), str(dest2)) == 0
 
     def test_accented_in_subdir_match_full(self, tmp_path):
@@ -2175,8 +2170,8 @@ class TestNfcNormalisationFullMode:
         dest.mkdir()
         (src / "sub").mkdir()
         (dest / "sub").mkdir()
-        make_file(src / "sub" / NFD_CAFE, b"img")
-        make_file(dest / "sub" / NFC_CAFE, b"img")
+        make_file(src / "sub" / NFD_ROSE, b"img")
+        make_file(dest / "sub" / NFC_ROSE, b"img")
         assert run("-f", str(src), str(dest)) == 0
 
 
@@ -2189,8 +2184,8 @@ class TestNfcNormalisationIgnoreMode:
         dest = tmp_path / "dest"
         dest.mkdir()
         (src / "sub").mkdir()
-        make_file(src / "sub" / NFD_CAFE, b"data")
-        make_file(dest / NFC_CAFE, b"data")
+        make_file(src / "sub" / NFD_ROSE, b"data")
+        make_file(dest / NFC_ROSE, b"data")
         assert run("-i", str(src), str(dest)) == 0
 
     def test_nfc_src_nfd_dest_match_ignore(self, tmp_path):
@@ -2199,8 +2194,8 @@ class TestNfcNormalisationIgnoreMode:
         dest = tmp_path / "dest"
         dest.mkdir()
         (dest / "sub").mkdir()
-        make_file(src / NFC_CAFE, b"data")
-        make_file(dest / "sub" / NFD_CAFE, b"data")
+        make_file(src / NFC_ROSE, b"data")
+        make_file(dest / "sub" / NFD_ROSE, b"data")
         assert run("-i", str(src), str(dest)) == 0
 
     def test_three_way_nfd_nfc_ignore_match(self, tmp_path):
@@ -2211,9 +2206,9 @@ class TestNfcNormalisationIgnoreMode:
         dest2 = tmp_path / "dest2"
         dest2.mkdir()
         (src / "sub").mkdir()
-        make_file(src / "sub" / NFD_CAFE, b"data")
-        make_file(dest1 / NFC_CAFE, b"data")
-        make_file(dest2 / NFC_CAFE, b"data")
+        make_file(src / "sub" / NFD_ROSE, b"data")
+        make_file(dest1 / NFC_ROSE, b"data")
+        make_file(dest2 / NFC_ROSE, b"data")
         assert run("-i", str(src), str(dest1), str(dest2)) == 0
 
 
@@ -2225,8 +2220,8 @@ class TestNfcNormalisationDiffMode:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / NFD_CAFE, b"content")
-        make_file(dest / NFC_CAFE, b"content")
+        make_file(src / NFD_ROSE, b"content")
+        make_file(dest / NFC_ROSE, b"content")
         assert run("--diff", str(src), str(dest)) == 0
 
     def test_nfd_src_nfc_dest_mismatch_diff(self, tmp_path, capsys):
@@ -2235,12 +2230,12 @@ class TestNfcNormalisationDiffMode:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / NFD_CAFE, b"aaa")
-        make_file(dest / NFC_CAFE, b"bbbb")
+        make_file(src / NFD_ROSE, b"aaa")
+        make_file(dest / NFC_ROSE, b"bbbb")
         assert run("--diff", str(src), str(dest)) == 1
         out = capsys.readouterr().out
         # The normalised (NFC) filename must appear in the diff output
-        assert NFC_CAFE in out
+        assert NFC_ROSE in out
 
 
 class TestNfcNormalisationEmptyDirs:
@@ -2294,7 +2289,7 @@ class TestNfcNormalisationEmptyDirs:
         assert run(str(src), str(dest)) == 1
         out = capsys.readouterr().out
         diff_lines = [line.strip() for line in out.splitlines()]
-        assert not any(line.endswith(NFC_DIR + "/") or line.endswith(NFD_DIR + "/") for line in diff_lines)
+        assert not any(line.endswith((NFC_DIR + "/", NFD_DIR + "/")) for line in diff_lines)
 
 
 class TestNfcNormalisationMolist:
@@ -2304,13 +2299,13 @@ class TestNfcNormalisationMolist:
         """TSV listing must contain the NFC form of an NFD-named file."""
         src = tmp_path / "src"
         src.mkdir()
-        make_file(src / NFD_CAFE, b"data")
+        make_file(src / NFD_ROSE, b"data")
         run("--molist", str(src))
         content = (chdir / f"molist_{src.name}.tsv").read_text(encoding="utf-8")
         for line in content.splitlines()[1:]:  # skip header
             path_col = line.split("\t")[-1]
             assert unicodedata.is_normalized("NFC", path_col), f"path in TSV is not NFC: {path_col!r}"
-        assert NFC_CAFE in content
+        assert NFC_ROSE in content
 
 
 # ---------------------------------------------------------------------------
@@ -2483,8 +2478,8 @@ class TestFuzz:
 
         # Pool of tricky name templates
         templates = [
-            "caf\u00e9_{}.txt",  # NFC é
-            "cafe\u0301_{}.txt",  # NFD é
+            "ros\u00e9_{}.txt",  # NFC é
+            "rose\u0301_{}.txt",  # NFD é
             "\u65e5\u672c\u8a9e_{}.txt",  # CJK
             "\u0645\u0644\u0641_{}.txt",  # Arabic
             "emoji_\U0001f4c1_{}.txt",  # folder emoji
@@ -3051,8 +3046,8 @@ class TestMocompare:
 # ---------------------------------------------------------------------------
 
 
-NFC_CAFE = "caf\u00e9.txt"  # é as a single code point  (NFC)
-NFD_CAFE = "cafe\u0301.txt"  # e + combining acute accent (NFD)
+NFC_ROSE = "ros\u00e9.txt"  # é as a single code point  (NFC)
+NFD_ROSE = "rose\u0301.txt"  # e + combining acute accent (NFD)
 
 
 class TestMocompareNfc:
@@ -3073,8 +3068,8 @@ class TestMocompareNfc:
         dest = tmp_path / "dest"
         dest.mkdir()
         # Simulate: APFS produced NFD, exFAT produced NFC
-        make_file(src / NFD_CAFE, b"content")
-        make_file(dest / NFC_CAFE, b"content")
+        make_file(src / NFD_ROSE, b"content")
+        make_file(dest / NFC_ROSE, b"content")
         run("--molist", str(src), str(dest))
         tsv_src = chdir / f"molist_{src.name}.tsv"
         tsv_dest = chdir / f"molist_{dest.name}.tsv"
@@ -3090,12 +3085,12 @@ class TestMocompareNfc:
         """
         src = tmp_path / "src"
         src.mkdir()
-        make_file(src / NFC_CAFE, b"content")
+        make_file(src / NFC_ROSE, b"content")
 
         # Write a TSV manually using NFD paths (as if from an older version)
         nfd_tsv = chdir / "molist_nfd.tsv"
         nfd_tsv.write_text(
-            f"size\tfilepath\n7\t{NFD_CAFE}\n",
+            f"size\tfilepath\n7\t{NFD_ROSE}\n",
             encoding="utf-8",
         )
 
@@ -3113,7 +3108,7 @@ class TestMocompareNfc:
         """
         src = tmp_path / "src"
         src.mkdir()
-        make_file(src / NFD_CAFE, b"data")
+        make_file(src / NFD_ROSE, b"data")
         run("--molist", str(src))
         content = (chdir / f"molist_{src.name}.tsv").read_text(encoding="utf-8")
         for line in content.splitlines()[1:]:
@@ -3129,8 +3124,8 @@ class TestMocompareNfc:
         src.mkdir()
         dest = tmp_path / "dest"
         dest.mkdir()
-        make_file(src / NFD_CAFE, b"aaa")
-        make_file(dest / NFC_CAFE, b"bbbb")  # same name (NFC≡NFD), different size
+        make_file(src / NFD_ROSE, b"aaa")
+        make_file(dest / NFC_ROSE, b"bbbb")  # same name (NFC≡NFD), different size
         run("--molist", str(src), str(dest))
         tsv_src = chdir / f"molist_{src.name}.tsv"
         tsv_dest = chdir / f"molist_{dest.name}.tsv"
