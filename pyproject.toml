@@ -55,21 +55,49 @@ dev = [
 ]
 
 [tool.hatch]
-build.targets.wheel.packages = [ "src/triplecheck" ]
-build.targets.sdist.include = [ "src/triplecheck/", "tests/" ]
+build.targets.wheel.packages = [ "src/triplecheck/" ]
+build.targets.sdist.include = [ "/src/triplecheck/", "/tests/" ]
+build.targets.sdist.exclude = [ "/.github/" ]
 
 [tool.uv]
 managed = true
 
 [tool.ruff]
 line-length = 120
-lint.select = [ "ANN", "B", "BLE", "C", "E", "F", "FURB", "I", "PL", "PT", "PTH", "RUF", "SIM", "UP", "W" ]
+lint.select = [
+  "A",    # flake8-builtins
+  "ANN",  # flake8-annotations
+  "B",    # flake8-bugbear
+  "BLE",  # flake8-blind-except
+  "C",    # flake8-comprehensions + mccabe
+  "DTZ",  # flake8-datetimez
+  "E",    # pycodestyle errors
+  "F",    # Pyflakes
+  "FLY",  # flynt
+  "FURB", # refurb
+  "I",    # isort
+  "PERF", # Perflint
+  "PGH",  # pygrep-hooks
+  "PIE",  # flake8-pie
+  "PL",   # Pylint
+  "PT",   # flake8-pytest-style
+  "RET",  # flake8-return
+  "RSE",  # flake8-raise
+  "RUF",  # Ruff-specific
+  "S",    # flake8-bandit (security)
+  "SIM",  # flake8-simplify
+  "TC",   # flake8-type-checking
+  "UP",   # pyupgrade
+  "W",    # pycodestyle warnings
+]
 lint.ignore = [
   "C901", # complexity: walk_tree and cmd_compare_dirs are intentionally dense
 ]
 lint.per-file-ignores."tests/*.py" = [
   "ANN",     # annotations on tests add noise without value
   "PLR2004", # exact values in assertions are the point
+  "S101",    # asserts are the point of a test
+  "S311",    # random is for fuzz-data generation, not cryptography
 ]
 
 [tool.pytest]
