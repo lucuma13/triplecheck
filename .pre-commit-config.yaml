@@ -9,21 +9,27 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: debug-statements
       - id: end-of-file-fixer
-      - id: trailing-whitespace
-        exclude: \.md$
       - id: mixed-line-ending
       - id: name-tests-test
         args: ["--pytest-test-first"]
+      - id: trailing-whitespace
+        exclude: \.md$
   # Spellcheck
   - repo: https://github.com/crate-ci/typos
-    rev: v1.47.2
+    rev: v1.47.2 # pin to a concrete release; v1 is a mutable rolling tag
     hooks:
       - id: typos
-        exclude: ^tests/ # false positives due to hex string hashes
+        args: [--force-exclude] # Flag only: removed default --write-changes
   # Pyproject formatter
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.23.0
+    rev: v2.24.1
     hooks:
       - id: pyproject-fmt
   # Pyproject validator
@@ -31,6 +37,11 @@ repos:
     rev: v0.25
     hooks:
       - id: validate-pyproject
+  # Keep uv.lock in sync with pyproject.toml
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.11.21
+    hooks:
+      - id: uv-lock
   # TOML formatter and linter (excluding pyproject.toml)
   - repo: local
     hooks:
@@ -78,7 +89,7 @@ repos:
           - "{extends: default, rules: {line-length: {max: 120}, comments: {min-spaces-from-content: 1}}}"
   # GitHub workflow schema validation
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.37.2
+    rev: 0.37.3
     hooks:
       - id: check-github-workflows
         args: ["--verbose"]
