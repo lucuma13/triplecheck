@@ -25,6 +25,7 @@ jobs:
     outputs:
       package-name: ${{ steps.meta.outputs.package-name }}
       smoke-test-cmds: ${{ steps.meta.outputs.smoke-test-cmds }}
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -41,11 +42,13 @@ jobs:
 
           project = data["project"]
           name = project["name"]
+          version = project["version"]
           cmds = " ".join(project.get("scripts", {}).keys())
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
               print(f"package-name={name}", file=out)
               print(f"smoke-test-cmds={cmds}", file=out)
+              print(f"version={version}", file=out)
   # JOB 2: Build and publish (only runs if CI passes)
   build-n-publish:
     name: Build and publish Python distro to TestPyPI
@@ -116,17 +119,21 @@ jobs:
       - name: Install deployed package from TestPyPI
         env:
           PACKAGE_NAME: ${{ needs.read-metadata.outputs.package-name }}
+          VERSION: ${{ needs.read-metadata.outputs.version }}
         shell: bash
         run: |
-          MAX_RETRIES=6
-          RETRY_INTERVAL=10
+          MAX_RETRIES=10
+          RETRY_INTERVAL=15
 
           for i in $(seq 1 $MAX_RETRIES); do
+            # --refresh-package bypasses uv's cached index listing so each retry
+            # re-fetches from the index and can see the freshly published version.
             if uv pip install --system \
               --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple/ \
               --prerelease allow \
-              "$PACKAGE_NAME"; then
+              --refresh-package "$PACKAGE_NAME" \
+              "$PACKAGE_NAME==$VERSION"; then
               echo "Package installed successfully from TestPyPI."
               exit 0
             fi
