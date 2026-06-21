@@ -29,7 +29,7 @@ repos:
         args: [--force-exclude] # Flag only: removed default --write-changes
   # Pyproject formatter
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.24.1
+    rev: v2.25.0
     hooks:
       - id: pyproject-fmt
   # Pyproject validator
