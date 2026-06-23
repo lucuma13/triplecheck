@@ -304,6 +304,40 @@ vite.config.ts.timestamp-*
 
 
 ###-------------------------------------------------------------
+### Powershell
+###-------------------------------------------------------------
+
+# Pester test output
+testResults.xml
+TestResults.xml
+*.TestResults.xml
+jacoco.xml
+.pester/
+
+# PowerShell module build / packaging output
+output/
+Output/
+BuildOutput/
+*.nupkg
+*.snk
+
+# Module dependency directories
+PSDepend/
+PSScriptAnalyzer/
+
+# PowerShell history and transcripts
+ConsoleHost_history.txt
+PowerShell_transcript.*.txt
+
+# PowerShell credential / secret stores
+*.clixml
+*.psd1.bak
+
+# Profile / editor artifacts
+*.ps1xml.bak
+
+
+###-------------------------------------------------------------
 ### Claude
 ###-------------------------------------------------------------
 .claude
