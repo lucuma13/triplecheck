@@ -37,11 +37,13 @@ repos:
     rev: v0.25
     hooks:
       - id: validate-pyproject
-  # Keep uv.lock in sync with pyproject.toml
+  # keep uv.lock in sync with pyproject.toml & Dependency security auditing
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.21
+    rev: 0.11.24
     hooks:
       - id: uv-lock
+      - id: uv-audit
+        args: ["--preview-features", "audit-command"]
   # TOML formatter and linter (excluding pyproject.toml)
   - repo: local
     hooks:
@@ -93,11 +95,6 @@ repos:
     hooks:
       - id: check-github-workflows
         args: ["--verbose"]
-  # Dependency security auditing
-  - repo: https://github.com/pypa/pip-audit
-    rev: v2.10.1
-    hooks:
-      - id: pip-audit
   # CI security auditing
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.25.2
