@@ -81,6 +81,9 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: false
+      # Dependency vulnerability scan against the locked tree
+      - name: Audit dependencies
+        run: uv audit --frozen --preview-features audit-command
       # YAML correctness
       - name: Lint YAML (yamllint)
         uses: ibiqlik/action-yamllint@2576378a8e339169678f9939646ee3ee325e845c # v3.1.1
