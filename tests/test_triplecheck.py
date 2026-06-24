@@ -289,7 +289,7 @@ def chdir(tmp_path):
 
 def run(*args) -> int:
     """Call triplecheck.main() with the given arguments and return its exit code."""
-    return triplecheck.main(list(args))  # type: ignore[attr-defined]
+    return triplecheck.main(list(args))
 
 
 # ---------------------------------------------------------------------------
