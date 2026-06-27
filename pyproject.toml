@@ -39,7 +39,7 @@ classifiers = [
 ]
 dependencies = [
   "blake3>=1.0.9",
-  "xxhash>=3.7.1",
+  "xxhash>=3.8",
 ]
 urls.Homepage = "https://github.com/lucuma13/triplecheck"
 scripts.triplecheck = "triplecheck.triplecheck:main"
