@@ -143,9 +143,10 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-# Visual Studio Code
+# Visual Studio Code (VSCode)
 .vscode/
 *.vsix
+*.code-workspace
 
 # Ruff stuff:
 .ruff_cache/
